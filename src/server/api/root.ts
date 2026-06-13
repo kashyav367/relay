@@ -1,5 +1,7 @@
 import { postRouter } from "~/server/api/routers/post";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
+import { gmailRouter } from "~/server/api/routers/gmail";
+import { calendarRouter } from "~/server/api/routers/calendar";
 
 /**
  * This is the primary router for your server.
@@ -7,7 +9,8 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  post: postRouter,
+  gmail: gmailRouter,
+  calendar: calendarRouter,
 });
 
 // export type definition of API

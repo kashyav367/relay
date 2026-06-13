@@ -1,0 +1,204 @@
+import { z } from "zod";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { corsair } from "~/server/corsair";
+import { buildRawEmailBase64 } from "~/server/lib/gmail";
+
+export const gmailRouter = createTRPCRouter({
+  inbox: publicProcedure.query(async () => {
+    const gmail = corsair.withTenant("dev").gmail.api;
+
+    const list = await gmail.messages.list({
+      maxResults: 10,
+    });
+
+    const emails = await Promise.all(
+      (list.messages ?? []).map(async (msg) => {
+        const email = await gmail.messages.get({
+          id: msg.id!,
+        });
+
+        const headers = email.payload?.headers ?? [];
+
+        const subject =
+          headers.find((h) => h.name === "Subject")?.value ?? "";
+
+        const from =
+          headers.find((h) => h.name === "From")?.value ?? "";
+
+        return {
+          id: email.id,
+          subject,
+          from,
+          snippet: email.snippet,
+          labels: email.labelIds,
+        };
+      }),
+    );
+
+    return emails;
+  }),
+
+  getEmail: publicProcedure
+  .input(z.object({
+    id: z.string(),
+  }))
+  .query(async ({ input }) => {
+    const gmail = corsair.withTenant("dev").gmail.api;
+
+    const email = await gmail.messages.get({
+      id: input.id,
+    });
+
+    const headers = email.payload?.headers ?? [];
+
+    return {
+      id: email.id,
+      snippet: email.snippet,
+      labels: email.labelIds,
+      subject:
+        headers.find((h) => h.name === "Subject")?.value ?? "",
+      from:
+        headers.find((h) => h.name === "From")?.value ?? "",
+      to:
+        headers.find((h) => h.name === "To")?.value ?? "",
+      date:
+        headers.find((h) => h.name === "Date")?.value ?? "",
+    };
+  }),
+
+  search: publicProcedure
+  .input(
+    z.object({
+      query: z.string(),
+    }),
+  )
+  .query(async ({ input }) => {
+    const gmail = corsair.withTenant("dev").gmail.api;
+
+    const results = await gmail.messages.list({
+      q: input.query,
+    });
+
+    return results;
+  }),
+
+sendEmail: publicProcedure
+  .input(
+    z.object({
+      to: z.string().email(),
+      subject: z.string(),
+      body: z.string(),
+    }),
+  )
+  .mutation(async ({ input }) => {
+    const gmail = corsair.withTenant("dev").gmail.api;
+
+    const raw = buildRawEmailBase64({
+      to: input.to,
+      subject: input.subject,
+      body: input.body,
+    });
+
+    return await gmail.messages.send({
+      raw,
+    });
+  }),
+
+createDraft: publicProcedure
+  .input(
+    z.object({
+      to: z.string().email(),
+      subject: z.string(),
+      body: z.string(),
+    }),
+  )
+  .mutation(async ({ input }) => {
+    const gmail = corsair.withTenant("dev").gmail.api;
+
+    const raw = buildRawEmailBase64({
+      to: input.to,
+      subject: input.subject,
+      body: input.body,
+    });
+
+    return await gmail.drafts.create({
+      draft: {
+        message: {
+          raw,
+        },
+      },
+    });
+  }),
+
+  sendDraft: publicProcedure
+  .input(
+    z.object({
+      id: z.string(),
+    }),
+  )
+  .mutation(async ({ input }) => {
+    const gmail = corsair.withTenant("dev").gmail.api;
+
+    return await gmail.drafts.send({
+      id: input.id,
+    });
+  }),
+
+  markUnread: publicProcedure
+  .input(
+    z.object({
+      id: z.string(),
+    }),
+  )
+  .mutation(async ({ input }) => {
+    const gmail = corsair.withTenant("dev").gmail.api;
+
+    return await gmail.messages.modify({
+      id: input.id,
+      addLabelIds: ["UNREAD"],
+    });
+  }),
+
+  trashEmail: publicProcedure
+  .input(
+    z.object({
+      id: z.string(),
+    }),
+  )
+  .mutation(async ({ input }) => {
+    const gmail = corsair.withTenant("dev").gmail.api;
+
+    return await gmail.messages.trash({
+      id: input.id,
+    });
+  }),
+
+  untrashEmail: publicProcedure
+  .input(
+    z.object({
+      id: z.string(),
+    }),
+  )
+  .mutation(async ({ input }) => {
+    const gmail = corsair.withTenant("dev").gmail.api;
+
+    return await gmail.messages.untrash({
+      id: input.id,
+    });
+  }),
+
+  deleteEmail: publicProcedure
+  .input(
+    z.object({
+      id: z.string(),
+    }),
+  )
+  .mutation(async ({ input }) => {
+    const gmail = corsair.withTenant("dev").gmail.api;
+
+    return await gmail.messages.delete({
+      id: input.id,
+    });
+  }),
+});
+
