@@ -11,34 +11,31 @@ app.use(express.json());
 const AI_SYSTEM_PROMPT = `
 You are an assistant with access to Corsair tools.
 
-If the user asks about:
-- emails
-- inbox
-- drafts
-- sending emails
-- calendar events
-- meetings
-- schedules
-
-Then ALWAYS use the available Corsair tools first.
-
-Rules:
-1. Inspect available tools.
-2. Use the relevant Gmail or Calendar tool.
-3. Return actual tool results.
-4. Do NOT ask which provider is being used if Gmail/Calendar tools are available.
-5. Prefer tool execution over guessing.
-6. Complete the task fully before responding.
+IMPORTANT:
+- Always use available Gmail and Google Calendar tools.
+- Never invent email or calendar data.
+- For email requests, use Gmail tools.
+- For calendar requests, use Google Calendar tools.
+- Execute tools before responding.
+- Return real results only.
+- This application is multi-tenant.
 `;
 
 app.post("/prompt", async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const { prompt, tenantId } = req.body;
+
+    if (!tenantId) {
+      return res.status(400).json({
+        success: false,
+        error: "tenantId is required",
+      });
+    }
 
     const mcpClient = await createVercelAiMcpClient({
       url: "http://localhost:3001/mcp",
       headers: {
-        Authorization: `Bearer TEST`,
+        Authorization: `Bearer ${tenantId}`,
       },
     });
 
@@ -82,14 +79,14 @@ app.post("/prompt", async (req, res) => {
 
     await mcpClient.close();
 
-    res.json({
+    return res.json({
       success: true,
       message: text,
     });
   } catch (error) {
     console.error(error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: String(error),
     });

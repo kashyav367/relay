@@ -33,6 +33,7 @@
     "@trpc/react-query": "^11.0.0",
     "@trpc/server": "^11.0.0",
     "ai": "^6.0.204",
+    "ai-sdk-ollama": "^3.8.7",
     "corsair": "^0.1.76",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.41.0",

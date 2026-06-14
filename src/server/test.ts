@@ -46,21 +46,17 @@
 // }
 
 // main().catch(console.error);
-
 import "dotenv/config";
-import { createCaller } from "./api/root";
+import { corsair } from "./corsair";
 
 async function main() {
-  const caller = createCaller({} as any);
+  const gmail = corsair.withTenant("dev").gmail.api;
+  const msgs = await gmail.messages.list({ maxResults: 3 });
+  console.log("✅ Gmail:", msgs.messages?.length, "messages");
 
-  
-const result = await caller.calendar.updateEvent({
-  id: "s4co4q2pjg14mojb3ou65s3fok",
-  summary: "Something exciting",
-});
-
-
-  console.log(result);
+  const cal = corsair.withTenant("dev").googlecalendar.api;
+  const evts = await cal.events.getMany({ calendarId: "primary" });
+  console.log("✅ Calendar:", evts.items?.length, "events");
 }
 
 main().catch(console.error);

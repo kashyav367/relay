@@ -20,7 +20,12 @@ export async function POST(request: NextRequest) {
 		body = text && text.trim() ? text : {};
 	}
 
-	const tenantId = 'dev'
+	// Pehle
+const tenantId = 'dev'
+
+// Baad mein — query param se lo (already sahi pattern)
+const url = new URL(request.url)
+const tenantId = url.searchParams.get('tenantId') ?? 'dev'
 
 	const result = await processWebhook(corsair, headers, body, { tenantId });
 
