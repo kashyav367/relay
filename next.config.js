@@ -5,6 +5,9 @@
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const nextConfig = {
+  serverExternalPackages: ["@corsair-dev/mcp", "express"],
+  // ...rest of your config
+};
 
-export default config;
+export default nextConfig;

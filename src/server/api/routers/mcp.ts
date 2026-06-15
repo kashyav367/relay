@@ -1,3 +1,4 @@
+
 import { createBaseMcpServer, createMcpRouter } from "@corsair-dev/mcp";
 import { corsair } from "~/server/corsair";
 import { createTRPCRouter, publicProcedure } from "../trpc";
@@ -7,7 +8,7 @@ import { createTRPCRouter, publicProcedure } from "../trpc";
  * to the authenticated user's tenant.
  */
 export const mcpRouter = createTRPCRouter({
-  handler: publicProcedure.mutation(async ({ ctx }) => {
+  mcp: publicProcedure.mutation(async ({ ctx }) => {
     const tenantId = "dev";
 
     return createMcpRouter(() =>
