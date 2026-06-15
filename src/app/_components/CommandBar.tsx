@@ -1,17 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MessageBubble } from "~/components/chat/MessageBubble";
+import { TypingIndicator } from "~/components/chat/TypingIndicator";
 
 interface Props {
   defaultPrompt?: string;
 }
 
+type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+};
+
 export default function CommandBar({
   defaultPrompt = "",
 }: Props) {
   const [prompt, setPrompt] = useState(defaultPrompt);
-  const [response, setResponse] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
     setPrompt(defaultPrompt);
@@ -20,6 +29,20 @@ export default function CommandBar({
   async function handleSubmit() {
     if (!prompt.trim()) return;
 
+    const userPrompt = prompt;
+
+    // User Message
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: userPrompt,
+        timestamp: new Date(),
+      },
+    ]);
+
+    setPrompt("");
     setLoading(true);
 
     try {
@@ -29,16 +52,48 @@ export default function CommandBar({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt,
+          prompt: userPrompt,
         }),
       });
 
       const data = await res.json();
+      console.log("CHAT RESPONSE", data);
 
-      setResponse(data.message);
+      // Assistant Message
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content:
+            typeof data.message === "string"
+              ? data.message
+              : Array.isArray(data.message)
+                ? data.message
+                    .map((item: any) =>
+                      item.subject
+                        ? `• ${item.subject}`
+                        : item.summary
+                          ? `• ${item.summary}`
+                          : "• Item"
+                    )
+                    .join("\n")
+                : JSON.stringify(data.message, null, 2),
+          timestamp: new Date(),
+        },
+      ]);
     } catch (err) {
       console.error(err);
-      setResponse("Failed to connect");
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Failed to connect.",
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -46,6 +101,19 @@ export default function CommandBar({
 
   return (
     <div className="space-y-4">
+      {/* Chat Messages */}
+      <div className="space-y-4">
+        {messages.map((message) => (
+          <MessageBubble
+            key={message.id}
+            message={message}
+          />
+        ))}
+
+        {loading && <TypingIndicator />}
+      </div>
+
+      {/* Input */}
       <div className="flex gap-2">
         <input
           value={prompt}
@@ -66,18 +134,6 @@ export default function CommandBar({
           Send
         </button>
       </div>
-
-      {loading && (
-        <div className="rounded-xl border p-4">
-          Thinking...
-        </div>
-      )}
-
-      {response && (
-        <pre className="overflow-auto rounded-xl border p-4 text-sm">
-          {JSON.stringify(response, null, 2)}
-        </pre>
-      )}
     </div>
   );
 }
