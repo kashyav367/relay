@@ -1,10 +1,73 @@
 "use client";
 
+import { useState } from "react";
+
 export default function CommandBar() {
+  const [prompt, setPrompt] = useState("");
+  const [response, setResponse] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    if (!prompt.trim()) return;
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+        }),
+      });
+
+      const data = await res.json();
+
+      setResponse(data.message);
+    } catch (err) {
+      console.error(err);
+      setResponse("Failed to connect");
+    }
+
+    setLoading(false);
+  }
+
   return (
-    <input
-      placeholder="Ask Relay..."
-      className="w-full rounded-xl border p-4"
-    />
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <input
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="Ask Relay..."
+          className="flex-1 rounded-xl border p-4"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSubmit();
+            }
+          }}
+        />
+
+        <button
+          onClick={handleSubmit}
+          className="rounded-xl bg-black px-6 text-white"
+        >
+          Send
+        </button>
+      </div>
+
+      {loading && (
+        <div className="rounded-xl border p-4">
+          Thinking...
+        </div>
+      )}
+
+      {response && (
+        <pre className="overflow-auto rounded-xl border p-4 text-sm">
+          {JSON.stringify(response, null, 2)}
+        </pre>
+      )}
+    </div>
   );
 }
