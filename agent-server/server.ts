@@ -1,98 +1,74 @@
-import express from "express";
 import { generateText, stepCountIs } from "ai";
 import { google } from "@ai-sdk/google";
 import { createVercelAiMcpClient } from "@corsair-dev/mcp";
 import "dotenv/config";
 
-const app = express();
-
-app.use(express.json());
+const DEFAULT_MCP_URL = "http://localhost:3001/mcp";
 
 const AI_SYSTEM_PROMPT = `
 You are an assistant with access to Corsair tools.
 
-IMPORTANT:
-- Always use available Gmail and Google Calendar tools.
-- Never invent email or calendar data.
-- For email requests, use Gmail tools.
-- For calendar requests, use Google Calendar tools.
-- Execute tools before responding.
-- Return real results only.
-- This application is multi-tenant.
+Rules:
+1. Call list_operations first.
+2. Call get_schema when needed.
+3. Use Gmail and Calendar tools directly.
+4. Never generate JavaScript code.
+5. Never use run_script for Gmail or Calendar operations.
+6. Return actual tool results.
+7. If no tool is needed, answer normally.
 `;
 
-app.post("/prompt", async (req, res) => {
-  try {
-    const { prompt, tenantId } = req.body;
+export const sendAIPrompt = async (
+  userPrompt: string,
+  tenantId: string,
+  mcpURL: string = DEFAULT_MCP_URL,
+): Promise<string> => {
+  const mcpClient = await createVercelAiMcpClient({
+    url: mcpURL,
+    headers: {
+      Authorization: `Bearer ${tenantId}`,
+    },
+  });
 
-    if (!tenantId) {
-      return res.status(400).json({
-        success: false,
-        error: "tenantId is required",
-      });
-    }
+  const tools = await mcpClient.tools();
 
-    const mcpClient = await createVercelAiMcpClient({
-      url: "http://localhost:3001/mcp",
-      headers: {
-        Authorization: `Bearer ${tenantId}`,
-      },
-    });
+  const { text } = await generateText({
+   model: google("gemini-flash-lite-latest"),
+    tools,
+    system: AI_SYSTEM_PROMPT,
+    prompt: userPrompt,
+    stopWhen: stepCountIs(20),
 
-    const tools = await mcpClient.tools();
+    onStepFinish: ({
+      stepNumber,
+      toolCalls,
+      toolResults,
+      text: stepText,
+    }) => {
+      console.log(`\n===== STEP ${stepNumber} =====`);
 
-    const { text } = await generateText({
-      model: google("gemini-2.5-flash"),
-      tools,
-      system: AI_SYSTEM_PROMPT,
-      prompt,
-      stopWhen: stepCountIs(10),
+      toolCalls?.forEach((call) =>
+        console.log(
+          "TOOL CALL:",
+          call.toolName,
+          JSON.stringify(call.input, null, 2),
+        ),
+      );
 
-      onStepFinish: ({
-        stepNumber,
-        toolCalls,
-        toolResults,
-        text: stepText,
-      }) => {
-        console.log(`\n===== STEP ${stepNumber} =====`);
+      toolResults?.forEach((result) =>
+        console.log(
+          "TOOL RESULT:",
+          JSON.stringify(result.output, null, 2),
+        ),
+      );
 
-        toolCalls?.forEach((call) => {
-          console.log(
-            "TOOL CALL:",
-            call.toolName,
-            JSON.stringify(call.input, null, 2),
-          );
-        });
+      if (stepText) {
+        console.log("TEXT:", stepText);
+      }
+    },
+  });
 
-        toolResults?.forEach((result) => {
-          console.log(
-            "TOOL RESULT:",
-            JSON.stringify(result.output, null, 2),
-          );
-        });
+  await mcpClient.close();
 
-        if (stepText) {
-          console.log("TEXT:", stepText);
-        }
-      },
-    });
-
-    await mcpClient.close();
-
-    return res.json({
-      success: true,
-      message: text,
-    });
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      success: false,
-      error: String(error),
-    });
-  }
-});
-
-app.listen(4000, () => {
-  console.log("🚀 Agent Server running on port 4000");
-});
+  return text.toString();
+};
