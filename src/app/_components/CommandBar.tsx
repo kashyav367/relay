@@ -1,11 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-export default function CommandBar() {
-  const [prompt, setPrompt] = useState("");
+interface Props {
+  defaultPrompt?: string;
+}
+
+export default function CommandBar({
+  defaultPrompt = "",
+}: Props) {
+  const [prompt, setPrompt] = useState(defaultPrompt);
   const [response, setResponse] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setPrompt(defaultPrompt);
+  }, [defaultPrompt]);
 
   async function handleSubmit() {
     if (!prompt.trim()) return;
@@ -29,9 +39,9 @@ export default function CommandBar() {
     } catch (err) {
       console.error(err);
       setResponse("Failed to connect");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (

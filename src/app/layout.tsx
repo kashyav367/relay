@@ -23,8 +23,15 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={cn(geist.variable, "font-sans", inter.variable)}>
-      <body>
+    <html
+      lang="en"
+      className={cn(
+        geist.variable,
+        inter.variable,
+        "font-sans dark"
+      )}
+    >
+      <body className="bg-background text-foreground">
         <TRPCReactProvider>{children}</TRPCReactProvider>
       </body>
     </html>
