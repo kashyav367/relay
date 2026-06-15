@@ -1,4 +1,5 @@
 import { Zap } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   id: string;
@@ -11,16 +12,7 @@ interface Props {
   message: Message;
 }
 
-function formatContent(content: string) {
-  return content.split("\n").map((line, i) => (
-    <p
-      key={i}
-      className="text-[var(--color-text-2)]"
-    >
-      {line}
-    </p>
-  ));
-}
+
 
 export function MessageBubble({ message }: Props) {
   const isUser = message.role === "user";
@@ -64,11 +56,14 @@ export function MessageBubble({ message }: Props) {
           </span>
         </div>
 
-        <div className="rounded-2xl rounded-tl-sm border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3">
-          <div className="flex flex-col gap-1 text-[14px] leading-relaxed">
-            {formatContent(message.content)}
-          </div>
-        </div>
+        
+<div className="rounded-2xl rounded-tl-sm border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3">
+  <div className="text-[14px] leading-relaxed text-[var(--color-text-2)]">
+    <ReactMarkdown>
+      {message.content}
+    </ReactMarkdown>
+  </div>
+</div>
       </div>
     </div>
   );

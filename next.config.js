@@ -7,7 +7,12 @@ import "./src/env.js";
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   serverExternalPackages: ["@corsair-dev/mcp", "express"],
-  // ...rest of your config
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "2mb",
+    },
+  },
 };
+
 
 export default nextConfig;
