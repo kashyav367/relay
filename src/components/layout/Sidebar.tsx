@@ -13,13 +13,32 @@ import {
   Zap,
   Circle,
 } from 'lucide-react'
-
 const NAV = [
-  { href: '/',         icon: MessageSquare, label: 'AI Chat',  badge: null },
-  { href: '/inbox',    icon: Inbox,         label: 'Inbox',    badge: '3' },
-  { href: '/calendar', icon: Calendar,      label: 'Calendar', badge: null },
-  { href: '/settings', icon: Settings,      label: 'Settings', badge: null },
-]
+  {
+    href: "/dashboard/chat",
+    icon: MessageSquare,
+    label: "AI Chat",
+    badge: null,
+  },
+  {
+    href: "/dashboard/inbox",
+    icon: Inbox,
+    label: "Inbox",
+    badge: "3",
+  },
+  {
+    href: "/dashboard/calendar",
+    icon: Calendar,
+    label: "Calendar",
+    badge: null,
+  },
+  {
+    href: "/dashboard/settings",
+    icon: Settings,
+    label: "Settings",
+    badge: null,
+  },
+];
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
@@ -46,7 +65,7 @@ export function Sidebar() {
       {/* Nav */}
       <nav className="flex flex-col gap-0.5 p-2 pt-3">
         {NAV.map(({ href, icon: Icon, label, badge }) => {
-          const active = path === href
+          const active = path.startsWith(href)
           return (
             <Link
               key={href}
@@ -108,7 +127,7 @@ export function Sidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate text-[12px] font-medium text-[var(--color-text)]">User</p>
-              <p className="truncate text-[10px] text-[var(--color-text-3)]">dev tenant</p>
+              <p className="truncate text-[10px] text-[var(--color-text-3)]">Relayt</p>
             </div>
           )}
         </div>

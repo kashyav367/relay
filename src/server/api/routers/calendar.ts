@@ -1,32 +1,45 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { corsair } from "~/server/corsair";
+import { getCurrentUser } from "~/server/auth";
 
-const TENANT = "dev";
+
 
 export const calendarRouter = createTRPCRouter({
-  getEvents: publicProcedure.query(async () => {
-    const calendar = corsair.withTenant(TENANT).googlecalendar.api;
+ getEvents: publicProcedure.query(async () => {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+ const calendar = corsair.withTenant(user.id).googlecalendar.api;
 
     return await calendar.events.getMany({
       calendarId: "primary",
     });
   }),
 
-  getEvent: publicProcedure
-    .input(
-      z.object({
-        id: z.string(),
-      }),
-    )
-    .query(async ({ input }) => {
-      const calendar = corsair.withTenant(TENANT).googlecalendar.api;
-
-      return await calendar.events.get({
-        id: input.id,
-        calendarId: "primary",
-      });
+getEvent: publicProcedure
+  .input(
+    z.object({
+      id: z.string(),
     }),
+  )
+  .query(async ({ input }) => {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const calendar = corsair.withTenant(user.id).googlecalendar.api;
+
+    return await calendar.events.get({
+      id: input.id,
+      calendarId: "primary",
+    });
+  }),
 
   createEvent: publicProcedure
     .input(
@@ -39,7 +52,13 @@ export const calendarRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      const calendar = corsair.withTenant(TENANT).googlecalendar.api;
+      const user = await getCurrentUser();
+
+      if (!user) {
+        throw new Error("Unauthorized");
+      }
+
+      const calendar = corsair.withTenant(user.id).googlecalendar.api;
 
       return await calendar.events.create({
         calendarId: "primary",
@@ -71,7 +90,13 @@ export const calendarRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      const calendar = corsair.withTenant(TENANT).googlecalendar.api;
+      const user = await getCurrentUser();
+
+      if (!user) {
+        throw new Error("Unauthorized");
+      }
+
+      const calendar = corsair.withTenant(user.id).googlecalendar.api;
 
       const existing = await calendar.events.get({
         id: input.id,
@@ -101,7 +126,13 @@ export const calendarRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      const calendar = corsair.withTenant(TENANT).googlecalendar.api;
+      const user = await getCurrentUser();
+
+      if (!user) {
+        throw new Error("Unauthorized");
+      }
+
+      const calendar = corsair.withTenant(user.id).googlecalendar.api;
 
       return await calendar.events.delete({
         id: input.id,
