@@ -5,11 +5,22 @@ import { useEffect, useState } from "react";
 export default function InboxCard() {
   const [emails, setEmails] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetch("/api/inbox")
-      .then((r) => r.json())
-      .then(setEmails);
-  }, []);
+ useEffect(() => {
+  fetch("/api/inbox")
+    .then((r) => r.json())
+    .then((data) => {
+      console.log("Inbox API:", data);
+
+      if (Array.isArray(data)) {
+        setEmails(data);
+      } else if (Array.isArray(data?.emails)) {
+        setEmails(data.emails);
+      } else {
+        setEmails([]);
+      }
+    })
+    .catch(console.error);
+}, []);
 
   return (
     <div className="rounded-xl border p-4">
@@ -18,7 +29,7 @@ export default function InboxCard() {
       </h2>
 
       <div className="space-y-3">
-        {emails.map((email) => (
+        {Array.isArray(emails) &&emails.map((email) => (
           <div
             key={email.id}
             className="border-b pb-2"
